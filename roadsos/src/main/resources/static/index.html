@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RoadSoS — Emergency Response</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --red: #FF1E1E;
+    --red-dark: #C00000;
+    --red-glow: rgba(255,30,30,0.3);
+    --black: #0A0A0A;
+    --dark: #111111;
+    --card: #181818;
+    --border: rgba(255,255,255,0.08);
+    --text: #F0F0F0;
+    --muted: #888888;
+    --green: #00FF88;
+    --amber: #FFB800;
+    --blue: #00B4FF;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--black);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,30,30,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,30,30,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  body::after {
+    content: '';
+    position: fixed; top: -200px; right: -200px;
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(255,30,30,0.12) 0%, transparent 70%);
+    pointer-events: none; z-index: 0;
+    animation: orbPulse 4s ease-in-out infinite;
+  }
+
+  @keyframes orbPulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.7; }
+  }
+
+  header {
+    position: relative; z-index: 10;
+    padding: 24px 40px;
+    display: flex; align-items: center; justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(10px);
+  }
+
+  .logo { display: flex; align-items: center; gap: 12px; }
+
+  .logo-icon {
+    width: 40px; height: 40px; background: var(--red);
+    border-radius: 10px; display: flex; align-items: center; justify-content: center;
+    font-size: 20px; box-shadow: 0 0 20px var(--red-glow);
+    animation: iconPulse 2s ease-in-out infinite;
+  }
+
+  @keyframes iconPulse {
+    0%, 100% { box-shadow: 0 0 20px var(--red-glow); }
+    50% { box-shadow: 0 0 40px var(--red-glow), 0 0 60px var(--red-glow); }
+  }
+
+  .logo-text { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; }
+  .logo-text span { color: var(--red); }
+
+  .status-badge {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.2);
+    padding: 6px 14px; border-radius: 100px;
+    font-size: 13px; color: var(--green); font-family: 'DM Mono', monospace;
+  }
+
+  .status-dot {
+    width: 8px; height: 8px; background: var(--green); border-radius: 50%;
+    animation: blink 1.5s ease-in-out infinite;
+  }
+
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  main {
+    position: relative; z-index: 10;
+    max-width: 1200px; margin: 0 auto;
+    padding: 40px 40px 80px;
+  }
+
+  .hero {
+    text-align: center; margin-bottom: 60px;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .hero-tag {
+    display: inline-block;
+    background: rgba(255,30,30,0.1); border: 1px solid rgba(255,30,30,0.3);
+    color: var(--red); font-family: 'DM Mono', monospace;
+    font-size: 12px; letter-spacing: 3px;
+    padding: 6px 16px; border-radius: 4px;
+    margin-bottom: 24px; text-transform: uppercase;
+  }
+
+  .hero h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(48px, 8vw, 96px);
+    letter-spacing: 4px; line-height: 0.95; margin-bottom: 20px;
+  }
+
+  .hero h1 .highlight { color: var(--red); text-shadow: 0 0 40px var(--red-glow); }
+
+  .hero p { color: var(--muted); font-size: 18px; font-weight: 300; max-width: 500px; margin: 0 auto; line-height: 1.6; }
+
+  /* LIVE LOCATION BANNER */
+  .location-banner {
+    background: rgba(0,180,255,0.06); border: 1px solid rgba(0,180,255,0.2);
+    border-radius: 14px; padding: 16px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 24px; animation: fadeUp 0.6s ease 0.05s both;
+    gap: 16px; flex-wrap: wrap;
+  }
+
+  .location-banner-left { display: flex; align-items: center; gap: 12px; }
+  .location-banner-left .icon { font-size: 24px; }
+  .location-banner-text .title { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+  .location-banner-text .sub { font-size: 12px; color: var(--muted); font-family: 'DM Mono', monospace; }
+  .location-banner-text .sub.active { color: var(--green); }
+
+  .live-location-btn {
+    background: var(--blue); border: none; border-radius: 10px;
+    color: white; font-family: 'DM Sans', sans-serif;
+    font-size: 14px; font-weight: 600; padding: 10px 20px;
+    cursor: pointer; transition: all 0.2s; white-space: nowrap;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .live-location-btn:hover { background: #0090CC; transform: translateY(-1px); }
+  .live-location-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+  .live-location-btn.success { background: var(--green); color: var(--black); }
+
+  /* MAIN GRID */
+  .sos-section {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 24px; margin-bottom: 40px;
+    animation: fadeUp 0.6s ease 0.1s both;
+  }
+
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 28px; }
+
+  .card-title {
+    font-family: 'DM Mono', monospace; font-size: 11px;
+    letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 20px;
+  }
+
+  .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+
+  .input-group { display: flex; flex-direction: column; gap: 6px; }
+
+  .input-group label { font-size: 12px; color: var(--muted); font-family: 'DM Mono', monospace; }
+
+  .input-group input, .input-group select {
+    background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px; color: var(--text);
+    font-family: 'DM Mono', monospace; font-size: 14px;
+    outline: none; transition: border-color 0.2s; width: 100%;
+  }
+
+  .input-group input:focus, .input-group select:focus { border-color: var(--red); }
+  .input-group select option { background: var(--dark); }
+
+  .severity-group { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+
+  .severity-btn {
+    padding: 10px; border-radius: 8px; border: 1px solid var(--border);
+    background: transparent; color: var(--muted);
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: all 0.2s; text-align: center;
+  }
+
+  .severity-btn:hover { border-color: var(--text); color: var(--text); }
+  .severity-btn.active-low { background: rgba(0,180,255,0.1); border-color: var(--blue); color: var(--blue); }
+  .severity-btn.active-medium { background: rgba(255,184,0,0.1); border-color: var(--amber); color: var(--amber); }
+  .severity-btn.active-high { background: rgba(255,30,30,0.15); border-color: var(--red); color: var(--red); }
+
+  .input-group textarea {
+    background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px; color: var(--text);
+    font-family: 'DM Sans', sans-serif; font-size: 14px;
+    outline: none; transition: border-color 0.2s; width: 100%;
+    resize: none; height: 80px;
+  }
+
+  .input-group textarea:focus { border-color: var(--red); }
+
+  .sos-btn {
+    width: 100%; padding: 18px; background: var(--red); border: none;
+    border-radius: 12px; color: white; font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px; letter-spacing: 3px; cursor: pointer; transition: all 0.2s;
+    box-shadow: 0 4px 30px rgba(255,30,30,0.4);
+    position: relative; overflow: hidden;
+  }
+
+  .sos-btn:hover { background: var(--red-dark); transform: translateY(-1px); box-shadow: 0 8px 40px rgba(255,30,30,0.5); }
+  .sos-btn.loading { background: var(--red-dark); pointer-events: none; }
+  .sos-btn.loading::after {
+    content: ''; position: absolute; top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    animation: shimmer 1s infinite;
+  }
+  @keyframes shimmer { to { left: 100%; } }
+
+  .resource-type-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+
+  .type-btn {
+    padding: 10px; border-radius: 8px; border: 1px solid var(--border);
+    background: transparent; color: var(--muted);
+    font-family: 'DM Sans', sans-serif; font-size: 13px;
+    cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; gap: 6px; justify-content: center;
+  }
+
+  .type-btn:hover { border-color: var(--text); color: var(--text); }
+  .type-btn.active { background: rgba(255,30,30,0.1); border-color: var(--red); color: var(--red); }
+
+  .nearby-btn {
+    width: 100%; padding: 14px; background: transparent;
+    border: 1px solid var(--red); border-radius: 12px; color: var(--red);
+    font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 3px;
+    cursor: pointer; transition: all 0.2s;
+  }
+
+  .nearby-btn:hover { background: rgba(255,30,30,0.1); }
+
+  /* RESULT CARDS */
+  .results-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px; margin-top: 20px;
+  }
+
+  .result-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px;
+    animation: fadeUp 0.4s ease both;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+
+  .result-card:hover { border-color: rgba(255,30,30,0.3); transform: translateY(-2px); }
+
+  .result-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+
+  .result-type {
+    font-size: 11px; font-family: 'DM Mono', monospace;
+    letter-spacing: 2px; padding: 4px 10px; border-radius: 4px; text-transform: uppercase;
+  }
+
+  .type-HOSPITAL { background: rgba(0,180,255,0.1); color: var(--blue); }
+  .type-AMBULANCE { background: rgba(255,30,30,0.1); color: var(--red); }
+  .type-POLICE { background: rgba(255,184,0,0.1); color: var(--amber); }
+  .type-TRAUMA_CENTRE { background: rgba(255,30,30,0.15); color: #FF6B6B; }
+  .type-TOWING_SERVICE { background: rgba(160,100,255,0.1); color: #A064FF; }
+.type-PUNCTURE_SHOP { background: rgba(0,255,136,0.1); color: var(--green); }
+.type-SERVICE_CENTRE { background: rgba(255,140,0,0.1); color: #FF8C00; }
+
+  .result-distance { font-family: 'Bebas Neue', sans-serif; font-size: 22px; color: var(--green); letter-spacing: 1px; }
+  .result-name { font-size: 15px; font-weight: 600; margin-bottom: 6px; line-height: 1.3; }
+  .result-address { font-size: 13px; color: var(--muted); margin-bottom: 10px; line-height: 1.4; }
+
+  .eta-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(255,184,0,0.1); border: 1px solid rgba(255,184,0,0.2);
+    border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; color: var(--amber); font-family: 'DM Mono', monospace;
+    margin-bottom: 12px;
+  }
+
+  .result-actions { display: flex; gap: 8px; }
+
+  .result-phone {
+    flex: 1; display: flex; align-items: center; gap: 8px;
+    background: rgba(255,255,255,0.04); border-radius: 8px; padding: 10px 14px;
+    font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500;
+    cursor: pointer; border: 1px solid var(--border);
+    transition: all 0.2s; color: var(--text); text-decoration: none;
+  }
+
+  .result-phone:hover { background: rgba(0,255,136,0.08); border-color: var(--green); color: var(--green); }
+
+  .maps-btn {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    background: rgba(0,180,255,0.08); border: 1px solid rgba(0,180,255,0.2);
+    border-radius: 8px; padding: 10px 14px; color: var(--blue);
+    font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s;
+    white-space: nowrap; font-family: 'DM Sans', sans-serif; text-decoration: none;
+  }
+
+  .maps-btn:hover { background: rgba(0,180,255,0.15); border-color: var(--blue); transform: translateY(-1px); }
+
+  /* SOS RESPONSE */
+  .sos-response {
+    background: var(--card); border: 1px solid rgba(255,30,30,0.3);
+    border-radius: 16px; padding: 28px; margin-top: 24px;
+    animation: fadeUp 0.4s ease both;
+  }
+
+  .sos-response-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+
+  .sos-id-badge {
+    background: rgba(255,30,30,0.1); border: 1px solid rgba(255,30,30,0.3);
+    color: var(--red); font-family: 'DM Mono', monospace;
+    font-size: 13px; padding: 4px 12px; border-radius: 6px;
+  }
+
+  .sos-message {
+    background: rgba(255,30,30,0.08); border-left: 3px solid var(--red);
+    padding: 14px 18px; border-radius: 0 8px 8px 0;
+    font-size: 14px; line-height: 1.5; margin-bottom: 20px; color: #FFB0B0;
+  }
+
+  .priority-list { display: flex; flex-direction: column; gap: 12px; }
+
+  .priority-item {
+    display: grid; grid-template-columns: auto 1fr auto auto;
+    align-items: center; gap: 14px;
+    background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px 16px;
+  }
+
+  .priority-num {
+    width: 28px; height: 28px; background: var(--red); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Bebas Neue', sans-serif; font-size: 16px; flex-shrink: 0;
+  }
+
+  .priority-info .p-name { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+  .priority-info .p-action { font-size: 12px; color: var(--muted); }
+  .priority-info .p-eta { font-size: 11px; color: var(--amber); margin-top: 2px; }
+
+  .priority-phone { font-family: 'DM Mono', monospace; font-size: 14px; color: var(--green); font-weight: 500; white-space: nowrap; }
+
+  .priority-maps {
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(0,180,255,0.08); border: 1px solid rgba(0,180,255,0.2);
+    border-radius: 8px; padding: 8px 10px;
+    color: var(--blue); font-size: 16px;
+    cursor: pointer; transition: all 0.2s; text-decoration: none; flex-shrink: 0;
+  }
+
+  .priority-maps:hover { background: rgba(0,180,255,0.15); transform: translateY(-1px); }
+
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
+  .empty-state .icon { font-size: 48px; margin-bottom: 16px; opacity: 0.4; }
+
+  .section-title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; margin-bottom: 4px; }
+  .section-subtitle { color: var(--muted); font-size: 14px; margin-bottom: 20px; }
+
+  .error-msg {
+    background: rgba(255,30,30,0.1); border: 1px solid rgba(255,30,30,0.3);
+    color: #FF8080; padding: 12px 16px; border-radius: 8px; font-size: 14px; margin-top: 12px;
+  }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 48px 0; }
+
+  @media (max-width: 768px) {
+    header { padding: 16px 20px; }
+    main { padding: 24px 20px 60px; }
+    .sos-section { grid-template-columns: 1fr; }
+    .input-row { grid-template-columns: 1fr; }
+    .results-grid { grid-template-columns: 1fr; }
+    .priority-item { grid-template-columns: auto 1fr; }
+    .priority-phone, .priority-maps { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+<!-- Offline banner -->
+<div id="offlineBanner" style="
+  display:none;
+  background:#FF1E1E;
+  color:white;
+  text-align:center;
+  padding:10px;
+  font-family:'DM Mono',monospace;
+  font-size:13px;
+  position:relative;
+  z-index:20;
+">
+  📡 YOU ARE OFFLINE — Showing cached emergency data
+</div>
+
+<script>
+  // Show/hide offline banner
+  window.addEventListener('online', () => {
+    document.getElementById('offlineBanner').style.display = 'none';
+  });
+  window.addEventListener('offline', () => {
+    document.getElementById('offlineBanner').style.display = 'block';
+  });
+</script>
+  <div class="logo">
+    <div class="logo-icon">🚨</div>
+    <div class="logo-text">Road<span>SoS</span></div>
+  </div>
+  <div class="status-badge">
+    <div class="status-dot"></div>
+    SYSTEM ACTIVE
+  </div>
+</header>
+
+<main>
+
+  <div class="hero">
+    <div class="hero-tag">IIT Madras — Road Safety Hackathon 2026</div>
+    <h1>Every Second<br><span class="highlight">Saves Lives</span></h1>
+    <p>Instant access to nearest hospitals, ambulances, and police during the critical golden hour.</p>
+  </div>
+
+  <!-- LIVE LOCATION BANNER -->
+  <div class="location-banner">
+    <div class="location-banner-left">
+      <div class="icon">🛰️</div>
+      <div class="location-banner-text">
+        <div class="title">Use Your Live Location</div>
+        <div class="sub" id="locationStatus">Click to auto-fill your GPS coordinates</div>
+      </div>
+    </div>
+    <button class="live-location-btn" id="locationBtn" onclick="getLiveLocation()">
+      📍 Get My Location
+    </button>
+  </div>
+
+  <div class="sos-section">
+
+    <!-- SOS CARD -->
+    <div class="card">
+      <div class="card-title">🚨 Trigger SOS Alert</div>
+      <div class="input-row">
+        <div class="input-group">
+          <label>LATITUDE</label>
+          <input type="number" id="sosLat" placeholder="13.0827" step="0.0001">
+        </div>
+        <div class="input-group">
+          <label>LONGITUDE</label>
+          <input type="number" id="sosLng" placeholder="80.2707" step="0.0001">
+        </div>
+      </div>
+      <div class="input-group" style="margin-bottom:16px">
+        <label>SEVERITY LEVEL</label>
+        <div class="severity-group" style="margin-top:6px">
+          <button class="severity-btn" onclick="setSeverity('LOW', this)">🟢 LOW</button>
+          <button class="severity-btn" onclick="setSeverity('MEDIUM', this)">🟡 MEDIUM</button>
+          <button class="severity-btn active-high" onclick="setSeverity('HIGH', this)">🔴 HIGH</button>
+        </div>
+      </div>
+      <div class="input-group" style="margin-bottom:20px">
+        <label>DESCRIPTION (OPTIONAL)</label>
+        <textarea id="sosDesc" placeholder="Describe the accident..."></textarea>
+      </div>
+      <button class="sos-btn" id="sosBtn" onclick="triggerSOS()">🚨 SEND SOS ALERT</button>
+      <div id="sosError"></div>
+    </div>
+
+    <!-- NEARBY CARD -->
+    <div class="card">
+      <div class="card-title">📍 Find Nearby Resources</div>
+      <div class="input-row">
+        <div class="input-group">
+          <label>LATITUDE</label>
+          <input type="number" id="nearLat" placeholder="13.0827" step="0.0001">
+        </div>
+        <div class="input-group">
+          <label>LONGITUDE</label>
+          <input type="number" id="nearLng" placeholder="80.2707" step="0.0001">
+        </div>
+      </div>
+      <div class="input-group" style="margin-bottom:16px">
+        <label>RESOURCE TYPE</label>
+        <div class="resource-type-grid" style="margin-top:6px">
+  <button class="type-btn active" onclick="setType(null, this)">🔍 All</button>
+  <button class="type-btn" onclick="setType('HOSPITAL', this)">🏥 Hospital</button>
+  <button class="type-btn" onclick="setType('AMBULANCE', this)">🚑 Ambulance</button>
+  <button class="type-btn" onclick="setType('POLICE', this)">👮 Police</button>
+  <button class="type-btn" onclick="setType('TOWING_SERVICE', this)">🚗 Towing</button>
+  <button class="type-btn" onclick="setType('PUNCTURE_SHOP', this)">🔧 Puncture</button>
+  <button class="type-btn" onclick="setType('SERVICE_CENTRE', this)">🏭 Service</button>
+</div>
+      </div>
+      <div class="input-group" style="margin-bottom:20px">
+        <label>NUMBER OF RESULTS</label>
+        <input type="number" id="nearLimit" value="5" min="1" max="10">
+      </div>
+      <button class="nearby-btn" onclick="findNearby()">📍 FIND NEAREST</button>
+      <div id="nearError"></div>
+    </div>
+
+  </div>
+
+  <div id="sosResult"></div>
+  <div id="nearbyResult"></div>
+
+</main>
+
+<script>
+  const API = 'http://localhost:8080';
+  let selectedSeverity = 'HIGH';
+  let selectedType = null;
+  let userLat = null;
+  let userLng = null;
+
+  // ── LIVE LOCATION ──────────────────────────────────────
+  function getLiveLocation() {
+    const btn = document.getElementById('locationBtn');
+    const status = document.getElementById('locationStatus');
+
+    if (!navigator.geolocation) {
+      status.textContent = '❌ Geolocation not supported by your browser';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = '⏳ Getting location...';
+    status.textContent = 'Requesting GPS access...';
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        userLat = position.coords.latitude.toFixed(6);
+        userLng = position.coords.longitude.toFixed(6);
+
+        // Fill all inputs
+        document.getElementById('sosLat').value = userLat;
+        document.getElementById('sosLng').value = userLng;
+        document.getElementById('nearLat').value = userLat;
+        document.getElementById('nearLng').value = userLng;
+
+        btn.textContent = '✅ Location Captured';
+        btn.classList.add('success');
+        btn.disabled = false;
+        status.textContent = `📍 ${userLat}, ${userLng} · ±${Math.round(position.coords.accuracy)}m accuracy`;
+        status.className = 'sub active';
+
+        // Auto-search with live location
+        findNearby();
+      },
+      (error) => {
+        btn.disabled = false;
+        btn.textContent = '📍 Try Again';
+        btn.classList.remove('success');
+        const msgs = {
+          1: '❌ Location access denied. Allow in browser settings.',
+          2: '❌ Position unavailable. Try again.',
+          3: '❌ Timed out. Try again.'
+        };
+        status.textContent = msgs[error.code] || '❌ Could not get location.';
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  }
+
+  // ── SEVERITY ───────────────────────────────────────────
+  function setSeverity(level, btn) {
+    selectedSeverity = level;
+    document.querySelectorAll('.severity-btn').forEach(b => b.className = 'severity-btn');
+    if (level === 'LOW') btn.classList.add('active-low');
+    else if (level === 'MEDIUM') btn.classList.add('active-medium');
+    else btn.classList.add('active-high');
+  }
+
+  // ── TYPE ───────────────────────────────────────────────
+  function setType(type, btn) {
+    selectedType = type;
+    document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+
+  // ── ETA ────────────────────────────────────────────────
+  function calculateETA(distanceKm, type) {
+    const speeds = { AMBULANCE: 30, POLICE: 40, HOSPITAL: 25, TRAUMA_CENTRE: 25 };
+    const speed = speeds[type] || 30;
+    const minutes = Math.ceil((distanceKm / speed) * 60);
+    return minutes < 2 ? '< 2 min' : `~${minutes} min`;
+  }
+
+  // ── MAPS ───────────────────────────────────────────────
+  function openMaps(destLat, destLng, fromSos = false) {
+    const latId = fromSos ? 'sosLat' : 'nearLat';
+    const lngId = fromSos ? 'sosLng' : 'nearLng';
+    const srcLat = document.getElementById(latId).value || userLat || '';
+    const srcLng = document.getElementById(lngId).value || userLng || '';
+
+    const url = srcLat && srcLng
+      ? `https://www.google.com/maps/dir/${srcLat},${srcLng}/${destLat},${destLng}`
+      : `https://www.google.com/maps/search/?api=1&query=${destLat},${destLng}`;
+
+    window.open(url, '_blank');
+  }
+
+  // ── TRIGGER SOS ────────────────────────────────────────
+  async function triggerSOS() {
+    const lat = document.getElementById('sosLat').value;
+    const lng = document.getElementById('sosLng').value;
+    const desc = document.getElementById('sosDesc').value;
+    const btn = document.getElementById('sosBtn');
+    const errDiv = document.getElementById('sosError');
+
+    if (!lat || !lng) {
+      errDiv.innerHTML = '<div class="error-msg">⚠️ Please enter or capture your location first.</div>';
+      return;
+    }
+
+    errDiv.innerHTML = '';
+    btn.classList.add('loading');
+    btn.textContent = '⏳ SENDING ALERT...';
+
+    try {
+      let url = `${API}/api/sos?lat=${lat}&lng=${lng}&severity=${selectedSeverity}`;
+      if (desc) url += `&description=${encodeURIComponent(desc)}`;
+
+      const res = await fetch(url, { method: 'POST' });
+      if (!res.ok) throw new Error('Server error: ' + res.status);
+      const data = await res.json();
+      renderSOSResponse(data);
+    } catch (e) {
+      errDiv.innerHTML = `<div class="error-msg">❌ ${e.message}. Is Spring Boot running?</div>`;
+    } finally {
+      btn.classList.remove('loading');
+      btn.textContent = '🚨 SEND SOS ALERT';
+    }
+  }
+
+  // ── FIND NEARBY ────────────────────────────────────────
+ async function findNearby() {
+  const lat = document.getElementById('nearLat').value;
+  const lng = document.getElementById('nearLng').value;
+  const limit = document.getElementById('nearLimit').value;
+  const errDiv = document.getElementById('nearError');
+
+  if (!lat || !lng) return;
+
+  errDiv.innerHTML = '';
+
+  // Build cache key
+  const cacheKey = `roadsos_${selectedType || 'ALL'}_${Math.round(lat*10)/10}_${Math.round(lng*10)/10}`;
+
+  try {
+    let url = `${API}/api/nearby?lat=${lat}&lng=${lng}&limit=${limit}`;
+    if (selectedType) url += `&type=${selectedType}`;
+
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Server error: ' + res.status);
+    const data = await res.json();
+
+    // Save to localStorage as offline backup
+    try {
+    	localStorage.setItem(cacheKey, JSON.stringify(data));
+    	localStorage.setItem('roadsos_last', JSON.stringify(data));
+    	localStorage.setItem('roadsos_cached_at', Date.now()); // ← add timestamp
+    } catch(e) {}
+
+    renderNearbyResults(data);
+
+  } catch (e) {
+    // Offline fallback — try localStorage cache
+   const cached = localStorage.getItem(cacheKey) 
+            || localStorage.getItem('roadsos_last');
+const cachedAt = localStorage.getItem('roadsos_cached_at');
+const isStale = cachedAt && (Date.now() - cachedAt) > 24 * 60 * 60 * 1000;
+
+if (cached && !isStale) {
+      const data = JSON.parse(cached);
+      renderNearbyResults(data);
+      errDiv.innerHTML = `
+        <div class="error-msg" style="background:rgba(255,184,0,0.1);border-color:var(--amber);color:var(--amber);">
+          📡 Offline — showing cached emergency data
+        </div>`;
+    } else {
+      errDiv.innerHTML = `
+        <div class="error-msg">
+          ❌ Offline and no cached data. Please search once while online first.
+        </div>`;
+    }
+  }
+}
+
+  // ── RENDER SOS ─────────────────────────────────────────
+  function renderSOSResponse(data) {
+    const resources = data.resources || {};
+    const entries = Object.entries(resources);
+
+    const priorityHTML = entries.map(([type, info], i) => {
+      const eta = calculateETA(info.distanceKm, type);
+      const hasCoords = info.latitude && info.longitude;
+      return `
+        <div class="priority-item">
+          <div class="priority-num">${i + 1}</div>
+          <div class="priority-info">
+            <div class="p-name">${info.name}</div>
+            <div class="p-action">${info.action} · ${info.distanceKm} km away</div>
+            <div class="p-eta">⏱ ETA: ${eta}</div>
+          </div>
+          <div class="priority-phone">${info.phone}</div>
+          ${hasCoords ? `<a class="priority-maps" onclick="openMaps(${info.latitude}, ${info.longitude}, true)" title="Get Directions">🗺️</a>` : ''}
+        </div>`;
+    }).join('');
+
+    document.getElementById('sosResult').innerHTML = `
+      <div class="sos-response">
+        <div class="sos-response-header">
+          <div class="section-title">SOS Dispatched</div>
+          <div class="sos-id-badge">ID #${data.sosId}</div>
+        </div>
+        <div class="sos-message">⚠️ ${data.message}</div>
+        <div class="priority-list">${priorityHTML}</div>
+      </div>`;
+
+    document.getElementById('sosResult').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  // ── RENDER NEARBY ──────────────────────────────────────
+  function renderNearbyResults(data) {
+    const resources = data.resources || [];
+
+    if (resources.length === 0) {
+      document.getElementById('nearbyResult').innerHTML = `
+        <div class="empty-state">
+          <div class="icon">📍</div>
+          <p>No resources found nearby.</p>
+        </div>`;
+      return;
+    }
+
+    const cards = resources.map((r, i) => {
+      const eta = calculateETA(r.distanceKm, r.type);
+      const hasCoords = r.latitude && r.longitude;
+      return `
+        <div class="result-card" style="animation-delay:${i * 0.05}s">
+          <div class="result-header">
+            <span class="result-type type-${r.type}">${r.type.replace('_', ' ')}</span>
+            <span class="result-distance">${r.distanceKm} km</span>
+          </div>
+          <div class="result-name">${r.name}</div>
+          <div class="result-address">📍 ${r.address || ''} ${r.city ? '· ' + r.city : ''} ${r.country ? '· ' + r.country : ''}</div>
+          <div class="eta-badge">⏱ ETA ${eta}</div>
+          <div class="result-actions">
+            <a class="result-phone" href="tel:${r.phone}">📞 ${r.phone}</a>
+            ${hasCoords ? `<a class="maps-btn" onclick="openMaps(${r.latitude}, ${r.longitude})">🗺️ Directions</a>` : ''}
+          </div>
+        </div>`;
+    }).join('');
+
+    document.getElementById('nearbyResult').innerHTML = `
+      <hr class="divider">
+      <div class="results-section">
+        <div class="section-title">Nearby Resources</div>
+        <div class="section-subtitle">${resources.length} results · sorted by distance</div>
+        <div class="results-grid">${cards}</div>
+      </div>`;
+
+    document.getElementById('nearbyResult').scrollIntoView({ behavior: 'smooth' });
+  }
+</script>
+</body>
+</html>
